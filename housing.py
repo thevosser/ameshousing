@@ -62,17 +62,70 @@ y = maintraindf.loc[:, maintraindf.columns == "SalePrice"]    #target column i.e
 
 X = X.fillna(0) #probably should be scaled like below in PCA
 
+######
+#####try scaling before selecting selectKbest
+######
+
+
+
 #apply SelectKBest class to extract top 10 best features
-bestfeatures = SelectKBest(score_func=chi2, k=10)
+nFeats = 10 #number of features to limit to
+bestfeatures = SelectKBest(score_func=chi2, k=nFeats)
 fit = bestfeatures.fit(X,y)
 dfscores = pd.DataFrame(fit.scores_)
 dfcolumns = pd.DataFrame(X.columns)
 #concat two dataframes for better visualization 
 featureScores = pd.concat([dfcolumns,dfscores],axis=1)
 featureScores.columns = ['Specs','Score']  #naming the dataframe columns
-print(featureScores.nlargest(10,'Score'))  #print 10 best features
+print(featureScores.nlargest(nFeats,'Score'))  #print 10 best features
 
-corrmtx2 = maintraindf[list(featureScores.nlargest(10,'Score')["Specs"])].corr()
+# create a correlation matrix
+corrmtx2 = maintraindf[list(featureScores.nlargest(nFeats,'Score')["Specs"])].corr()
+
+
+######
+#####Limit features to SelectKBest selction
+#####
+
+list(featureScores.nlargest(10,'Score')["Specs"])
+
+#########
+######train test split here
+#########
+
+#predict test set
+# predX = testdf[fit.get_feature_names_out()].fillna(0)
+# maintestdf.drop(columns="Id", inplace=True)
+
+from sklearn.ensemble import ExtraTreesClassifier
+model = ExtraTreesClassifier(n_estimators=10)
+treefit = model.fit(X, y)
+print(treefit.feature_importances_)
+
+######
+#####Score model
+######
+
+
+
+
+
+# add predictions to test
+testprices = pd.DataFrame(treefit.predict(maintestdf.fillna(0)))
+testoutput = pd.concat([testprices, maintestdf], axis=1, join="inner")
+
+testoutput.rename({0:"SalePrice"}, axis=1)
+
+# output to file
+testoutput.to_csv("testpred.csv")
+
+
+
+
+
+
+
+
 
 
 ########
@@ -85,7 +138,7 @@ scaler.fit(X)
 Xscaled = scaler.transform(X)
 
 from sklearn.decomposition import PCA
-pca_30 = PCA(n_components=30, random_state=2020)
+pca_30 = PCA(n_components=150, random_state=2020)
 pca_30.fit(Xscaled)
 X_pca_30 = pca_30.transform(X)
 pca_30.explained_variance_ratio_ * 100
@@ -93,24 +146,6 @@ plt.plot(np.cumsum(pca_30.explained_variance_ratio_ * 100))
 plt.show()
 
 
-###### need to score how well it fits to training set
-# fit.
 
-#predict test set
-# predX = testdf[fit.get_feature_names_out()].fillna(0)
-maintestdf.drop(columns="Id", inplace=True)
-fit.predict(maintestdf.fillna(0))
 
-from sklearn.ensemble import ExtraTreesClassifier
-model = ExtraTreesClassifier(n_estimators=10)
-treefit = model.fit(X, y)
-print(treefit.feature_importances_)
 
-# add predictions to test
-testprices = pd.DataFrame(treefit.predict(maintestdf.fillna(0)))
-testoutput = pd.concat([testprices, maintestdf], axis=1, join="inner")
-
-testoutput.rename({0:"SalePrice"}, axis=1)
-
-# output to file
-testoutput.to_csv("testpred.csv")
