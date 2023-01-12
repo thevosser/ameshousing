@@ -104,9 +104,15 @@ traindf.to_excel("trainpredicted.xlsx")
 
 #Still not great, but a pretty good model, the predictions have some outliers, need to learn more what is doing that.
 
+# check MAE - have not learned this, but wanted to see
+from sklearn.metrics import mean_absolute_error
+score = mean_absolute_error(traindf["SalePrice"], traindf["predicted_price"])
+print("The Mean Absolute Error of our Model is {}".format(round(score, 2)))
 
-
-
+# check RSME - have not learned this, but wanted to see
+from sklearn.metrics import mean_squared_error
+score = np.sqrt(mean_absolute_error(traindf["SalePrice"], traindf["predicted_price"]))
+print("The Mean Absolute Error of our Model is {}".format(round(score, 2)))
 
 
 
